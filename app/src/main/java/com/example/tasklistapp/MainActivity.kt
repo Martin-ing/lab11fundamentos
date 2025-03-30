@@ -8,14 +8,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,6 +25,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,25 +107,19 @@ fun TaskListContent(
         )
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Button(onClick = { imagePickerLauncher.launch("image/*") }) {
-                Text("Pick Image")
-            }
-            Button(
-                onClick = {
-                    if (newTaskTitle.isNotEmpty()) {
-                        onAddTask(newTaskTitle, selectedImageUri)
-                        newTaskTitle = ""
-                        selectedImageUri = null
-                    }
+        Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+            Text("Pick Image")
+        }
+        Button(
+            onClick = {
+                if (newTaskTitle.isNotEmpty()) {
+                    onAddTask(newTaskTitle, selectedImageUri)
+                    newTaskTitle = ""
+                    selectedImageUri = null
                 }
-            ) {
-                Text("Add Task")
             }
+        ) {
+            Text("Add Task")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -138,10 +131,12 @@ fun TaskListContent(
 @Composable
 fun TaskList(tasks: List<Task>, onRemove: (Task) -> Unit, onEdit: (Task, String, String?) -> Unit) {
 
-    Column {
-        tasks.forEach { task ->
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(tasks) { task ->
             TaskItem(task, onRemove = { onRemove(task) }, onEdit = onEdit)
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -157,31 +152,40 @@ fun TaskItem(task: Task, onRemove: () -> Unit,
     ) { uri ->
         newImage = uri?.toString()
     }
-    Row(
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
 
-        task.imageUri?.let { uri ->
-            AsyncImage(
-                model = uri,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp)
-            )
-        }
-        IconButton(onClick = { Editar = true }) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Task")
-        }
-        IconButton(onClick = onRemove) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Delete Task"
-            )
+            task.imageUri?.let { uri ->
+                AsyncImage(
+                    model = uri,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+            IconButton(onClick = { Editar = true }) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Task")
+            }
+            IconButton(onClick = onRemove) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Task"
+                )
+            }
         }
     }
+
     if (Editar) {
         AlertDialog(
             onDismissRequest = { Editar = false },
