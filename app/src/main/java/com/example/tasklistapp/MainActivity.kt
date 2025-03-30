@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.Edit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +69,8 @@ fun TaskListScreen() {
         onAddTask = { title, imageUri ->
             tasks.add(Task(title, imageUri))
         },
-        onRemove = {task -> tasks.remove(task)}
+        onRemove = {task -> tasks.remove(task)},
+        onEdit = {task, title, imageUri -> tasks[tasks.indexOf(task)] = Task(title, imageUri)}
     )
 }
 
@@ -76,7 +78,8 @@ fun TaskListScreen() {
 fun TaskListContent(
     tasks: List<Task>,
     onAddTask: (String, String?) -> Unit,
-    onRemove: (Task) -> Unit
+    onRemove: (Task) -> Unit,
+    onEdit: (Task, String, String?) -> Unit
 ) {
     var newTaskTitle by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<String?>(null) }
@@ -128,29 +131,36 @@ fun TaskListContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TaskList(tasks, onRemove = onRemove)
+        TaskList(tasks, onRemove = onRemove, onEdit = onEdit)
     }
 }
 
 @Composable
-fun TaskList(tasks: List<Task>, onRemove: (Task) -> Unit) {
+fun TaskList(tasks: List<Task>, onRemove: (Task) -> Unit, onEdit: (Task, String, String?) -> Unit) {
+
     Column {
         tasks.forEach { task ->
-            TaskItem(task, onRemove = { onRemove(task) })
+            TaskItem(task, onRemove = { onRemove(task) }, onEdit = onEdit)
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
 @Composable
-fun TaskItem(task: Task, onRemove: () -> Unit) {
-    var grayscale by remember { mutableStateOf(false) }
-
+fun TaskItem(task: Task, onRemove: () -> Unit,
+             onEdit: (Task, String, String?) -> Unit) {
+    var Editar by remember { mutableStateOf(false) }
+    var newTitle by remember { mutableStateOf(task.title) }
+    var newImage by remember { mutableStateOf(task.imageUri) }
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        newImage = uri?.toString()
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { grayscale = !grayscale },
+            .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
@@ -159,18 +169,50 @@ fun TaskItem(task: Task, onRemove: () -> Unit) {
             AsyncImage(
                 model = uri,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                colorFilter = if (grayscale) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null
+                modifier = Modifier.size(64.dp)
             )
         }
-
-        IconButton(onClick = onRemove) { // 👈 Botón de eliminar
+        IconButton(onClick = { Editar = true }) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Task")
+        }
+        IconButton(onClick = onRemove) {
             Icon(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "Delete Task"
             )
         }
-
+    }
+    if (Editar) {
+        AlertDialog(
+            onDismissRequest = { Editar = false },
+            title = { Text("Edit Task") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = newTitle,
+                        onValueChange = { newTitle = it },
+                        label = { Text("New Title") }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+                        Text("Pick a new image")
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    onEdit(task, newTitle, newImage)
+                    Editar = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { Editar = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
