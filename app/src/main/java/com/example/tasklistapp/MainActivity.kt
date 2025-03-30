@@ -24,6 +24,10 @@ import com.example.tasklistapp.ui.theme.TaskListAppTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,14 +67,16 @@ fun TaskListScreen() {
         tasks = tasks,
         onAddTask = { title, imageUri ->
             tasks.add(Task(title, imageUri))
-        }
+        },
+        onRemove = {task -> tasks.remove(task)}
     )
 }
 
 @Composable
 fun TaskListContent(
     tasks: List<Task>,
-    onAddTask: (String, String?) -> Unit
+    onAddTask: (String, String?) -> Unit,
+    onRemove: (Task) -> Unit
 ) {
     var newTaskTitle by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<String?>(null) }
@@ -122,22 +128,22 @@ fun TaskListContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TaskList(tasks)
+        TaskList(tasks, onRemove = onRemove)
     }
 }
 
 @Composable
-fun TaskList(tasks: List<Task>) {
+fun TaskList(tasks: List<Task>, onRemove: (Task) -> Unit) {
     Column {
         tasks.forEach { task ->
-            TaskItem(task)
+            TaskItem(task, onRemove = { onRemove(task) })
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
 @Composable
-fun TaskItem(task: Task) {
+fun TaskItem(task: Task, onRemove: () -> Unit) {
     var grayscale by remember { mutableStateOf(false) }
 
     Row(
@@ -157,6 +163,14 @@ fun TaskItem(task: Task) {
                 colorFilter = if (grayscale) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null
             )
         }
+
+        IconButton(onClick = onRemove) { // 👈 Botón de eliminar
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete Task"
+            )
+        }
+
     }
 }
 
