@@ -28,20 +28,21 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 
-
+// Esta parte se encagra de ejecutar el programa
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TaskListAppTheme {
-                TaskListScreen()
+                ToDoListScreen()
             }
         }
     }
 }
 
+//Componente principal
 @Composable
-fun TaskListScreen() {
+fun ToDoListScreen() {
     val context = LocalContext.current
 
     // State Hoisting: Elevamos el estado para gestionar las tareas y las imágenes
@@ -63,7 +64,8 @@ fun TaskListScreen() {
         }
     }
 
-    TaskListContent(
+    //Manda a llamar a ToDoListContent con las funciones de delete y remove agregadas
+    ToDoListContent(
         tasks = tasks,
         onAddTask = { title, imageUri ->
             tasks.add(Task(title, imageUri))
@@ -73,8 +75,9 @@ fun TaskListScreen() {
     )
 }
 
+//Contiene el form para crear una nueva tarea y la lista de tareas
 @Composable
-fun TaskListContent(
+fun ToDoListContent(
     tasks: List<Task>,
     onAddTask: (String, String?) -> Unit,
     onRemove: (Task) -> Unit,
@@ -95,10 +98,11 @@ fun TaskListContent(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Task List", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "To Do List", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        //Estos son los campos de texto y botones para guardar una tarea con o sin imagen
         OutlinedTextField(
             value = newTaskTitle,
             onValueChange = { newTaskTitle = it },
@@ -107,11 +111,15 @@ fun TaskListContent(
         )
 
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { imagePickerLauncher.launch("image/*") }) {
             Text("Pick Image")
         }
         Button(
+            modifier = Modifier.fillMaxWidth(),
             onClick = {
+                //Solo se manda si el texto no esta vacio
                 if (newTaskTitle.isNotEmpty()) {
                     onAddTask(newTaskTitle, selectedImageUri)
                     newTaskTitle = ""
@@ -124,13 +132,16 @@ fun TaskListContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TaskList(tasks, onRemove = onRemove, onEdit = onEdit)
+        //Manda a llamar a la lista de tareas
+        ToDoList(tasks, onRemove = onRemove, onEdit = onEdit)
     }
 }
 
+//Lista de tareas
 @Composable
-fun TaskList(tasks: List<Task>, onRemove: (Task) -> Unit, onEdit: (Task, String, String?) -> Unit) {
+fun ToDoList(tasks: List<Task>, onRemove: (Task) -> Unit, onEdit: (Task, String, String?) -> Unit) {
 
+    //Utiliza LazyColumn para enumerar las tareas una por una
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -141,10 +152,11 @@ fun TaskList(tasks: List<Task>, onRemove: (Task) -> Unit, onEdit: (Task, String,
     }
 }
 
+//Representa cada tarea individualmente
 @Composable
 fun TaskItem(task: Task, onRemove: () -> Unit,
              onEdit: (Task, String, String?) -> Unit) {
-    var Editar by remember { mutableStateOf(false) }
+    var editar by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf(task.title) }
     var newImage by remember { mutableStateOf(task.imageUri) }
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -153,6 +165,7 @@ fun TaskItem(task: Task, onRemove: () -> Unit,
         newImage = uri?.toString()
     }
 
+    //Card donde se muestra el contenido
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,32 +176,47 @@ fun TaskItem(task: Task, onRemove: () -> Unit,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
-
-            task.imageUri?.let { uri ->
-                AsyncImage(
-                    model = uri,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp)
-                )
+            Row(
+                modifier = Modifier
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                task.imageUri?.let { uri ->
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
+                Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
             }
-            IconButton(onClick = { Editar = true }) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Task")
-            }
-            IconButton(onClick = onRemove) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete Task"
-                )
+            Row(
+                modifier = Modifier
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                //Botones para mandar a editar o eliminar la tarea
+                IconButton(onClick = { editar = true }) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Task")
+                }
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Task"
+                    )
+                }
             }
         }
     }
 
-    if (Editar) {
+    //Si editar esta como true, va a desplegar un AlertDialog, donde el usuario puede ingresar la nueva info
+    if (editar) {
         AlertDialog(
-            onDismissRequest = { Editar = false },
+            onDismissRequest = { editar = false },
             title = { Text("Edit Task") },
             text = {
                 Column {
@@ -197,22 +225,25 @@ fun TaskItem(task: Task, onRemove: () -> Unit,
                         onValueChange = { newTitle = it },
                         label = { Text("New Title") }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp).fillMaxWidth())
                     Button(onClick = { imagePickerLauncher.launch("image/*") }) {
                         Text("Pick a new image")
                     }
                 }
             },
+            //Manda a editar la info, Solo se manda si el texto no esta vacio
             confirmButton = {
                 Button(onClick = {
-                    onEdit(task, newTitle, newImage)
-                    Editar = false
+                    if (newTitle.isNotBlank()){
+                        onEdit(task, newTitle, newImage)
+                        editar = false
+                    }
                 }) {
                     Text("Save")
                 }
             },
             dismissButton = {
-                Button(onClick = { Editar = false }) {
+                Button(onClick = { editar = false }) {
                     Text("Cancel")
                 }
             }
@@ -220,12 +251,14 @@ fun TaskItem(task: Task, onRemove: () -> Unit,
     }
 }
 
+//Esta parte solo sirve para el preview
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     TaskListAppTheme {
-        TaskListScreen()
+        ToDoListScreen()
     }
 }
 
+//Los objetos tipo Task
 data class Task(val title: String, val imageUri: String?)
